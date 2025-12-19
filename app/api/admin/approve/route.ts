@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
             data: {
                 status: 'active',
                 verificationStatus: 'approved',
-                reviewedAt: new Date(),
             },
         });
 

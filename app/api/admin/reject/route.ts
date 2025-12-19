@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
             data: {
                 status: 'rejected',
                 verificationStatus: 'rejected',
-                reviewedAt: new Date(),
-                submissionNotes: reason || 'Submission rejected',
             },
         });
 

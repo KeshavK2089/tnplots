@@ -5,18 +5,19 @@ export async function POST(request: NextRequest) {
     try {
         const data = await request.json();
 
-        // Find or create seller
-        let seller = await prisma.seller.findFirst({
+        // Find or create seller (User model with seller role)
+        let seller = await prisma.user.findFirst({
             where: { phoneNumber: data.phoneNumber },
         });
 
         if (!seller) {
-            seller = await prisma.seller.create({
+            seller = await prisma.user.create({
                 data: {
                     name: data.sellerName,
                     phoneNumber: data.phoneNumber,
                     whatsappNumber: data.whatsappNumber || data.phoneNumber,
                     email: data.email,
+                    role: 'seller',
                 },
             });
         }
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
                 titleEn: data.title,
                 village: data.village,
                 district: data.district,
-                taluk: data.taluk || '',
+                taluk: data.taluk || 'Cheyyar',
                 state: 'Tamil Nadu',
                 surveyNumber: data.surveyNumber,
                 category: data.category,
@@ -35,15 +36,12 @@ export async function POST(request: NextRequest) {
                 sizeCents: data.sizeCents,
                 totalPrice: data.totalPrice,
                 pricePerSqft: data.pricePerSqft,
-                latitude: data.latitude,
-                longitude: data.longitude,
-                distanceFromMainRoad: data.distanceFromMainRoad,
-                roadWidth: data.roadWidth,
-                features: data.features,
+                latitude: data.latitude || 0,
+                longitude: data.longitude || 0,
                 status: 'pending', // Will require admin approval
                 verificationStatus: 'pending',
                 sellerId: seller.id,
-                submittedAt: new Date(),
+                amenities: data.features || {},
             },
         });
 
@@ -54,8 +52,8 @@ export async function POST(request: NextRequest) {
                     prisma.plotImage.create({
                         data: {
                             plotId: plot.id,
-                            url: url,
-                            publicId: `tnplots/${plot.id}_${index}`,
+                            cloudinaryUrl: url,
+                            cloudinaryPublicId: `tnplots/${plot.id}_${index}`,
                             displayOrder: index,
                             isFeatured: index === 0,
                         },
