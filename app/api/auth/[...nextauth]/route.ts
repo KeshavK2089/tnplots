@@ -1,11 +1,11 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
+import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 // Hardcoded admin credentials
 const ADMIN_USERNAME = '3028976913';
 const ADMIN_PASSWORD = 'Kuttyma.17';
 
-export const authOptions: NextAuthOptions = {
+const handler = NextAuth({
     providers: [
         CredentialsProvider({
             name: 'Credentials',
@@ -50,8 +50,6 @@ export const authOptions: NextAuthOptions = {
         strategy: 'jwt',
     },
     secret: process.env.NEXTAUTH_SECRET || 'your-secret-key-change-in-production',
-};
-
-const handler = NextAuth(authOptions);
+});
 
 export { handler as GET, handler as POST };
