@@ -1,0 +1,170 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  phoneNumber   String   @unique @map("phone_number")
+  whatsappNumber String? @map("whatsapp_number")
+  name          String
+  email         String?
+  password      String?
+  role          String   @default("seller") // seller, admin, verifier
+  isVerified    Boolean  @default(false) @map("is_verified")
+  trustScore    Int      @default(0) @map("trust_score")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  plots             Plot[]
+  verificationLogs  VerificationLog[]
+  adminLogs         AdminLog[]
+  favorites         Favorite[]
+
+  @@map("users")
+}
+
+model Plot {
+  id                 String   @id @default(uuid())
+  sellerId           String   @map("seller_id")
+  seller             User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  
+  // Basic Info
+  titleEn            String   @map("title_en")
+  titleTa            String?  @map("title_ta")
+  descriptionEn      String?  @map("description_en")
+  descriptionTa      String?  @map("description_ta")
+  category           String   // residential, agricultural, commercial
+  
+  // Location
+  village            String
+  taluk              String   @default("Cheyyar")
+  district           String   @default("Tiruvannamalai")
+  state              String   @default("Tamil Nadu")
+  surveyNumber       String?  @map("survey_number")
+  latitude           Float
+  longitude          Float
+  
+  // Size & Pricing
+  sizeSqft           Int      @map("size_sqft")
+  sizeCents          Float?   @map("size_cents")
+  totalPrice         Int      @map("total_price")
+  pricePerSqft       Int?     @map("price_per_sqft")
+  isNegotiable       Boolean  @default(true) @map("is_negotiable")
+  
+  // Status
+  status             String   @default("pending") // pending, active, sold, archived
+  verificationStatus String   @default("pending") @map("verification_status") // pending, approved, rejected, info_requested
+  isFeatured         Boolean  @default(false) @map("is_featured")
+  
+  // Amenities (stored as JSON array)
+  amenities          Json     @default("[]")
+  
+  // Metadata
+  viewCount          Int      @default(0) @map("view_count")
+  inquiryCount       Int      @default(0) @map("inquiry_count")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  publishedAt        DateTime? @map("published_at")
+  
+  images             PlotImage[]
+  documents          VerificationDocument[]
+  verificationLogs   VerificationLog[]
+  inquiries          Inquiry[]
+  favorites          Favorite[]
+
+  @@index([status])
+  @@index([category])
+  @@index([village])
+  @@index([totalPrice])
+  @@index([sellerId])
+  @@map("plots")
+}
+
+model PlotImage {
+  id                 String   @id @default(uuid())
+  plotId             String   @map("plot_id")
+  plot               Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  cloudinaryUrl      String   @map("cloudinary_url")
+  cloudinaryPublicId String   @map("cloudinary_public_id")
+  isFeatured         Boolean  @default(false) @map("is_featured")
+  displayOrder       Int      @default(0) @map("display_order")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@index([plotId])
+  @@map("plot_images")
+}
+
+model VerificationDocument {
+  id                 String   @id @default(uuid())
+  plotId             String   @map("plot_id")
+  plot               Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  documentType       String   @map("document_type") // survey, ownership, tax_receipt, other
+  cloudinaryUrl      String   @map("cloudinary_url")
+  cloudinaryPublicId String   @map("cloudinary_public_id")
+  uploadedAt         DateTime @default(now()) @map("uploaded_at")
+
+  @@map("verification_documents")
+}
+
+model VerificationLog {
+  id              String   @id @default(uuid())
+  plotId          String   @map("plot_id")
+  plot            Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  verifierId      String?  @map("verifier_id")
+  verifier        User?    @relation(fields: [verifierId], references: [id])
+  action          String   // approved, rejected, info_requested
+  notes           String?
+  rejectionReason String?  @map("rejection_reason")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("verification_logs")
+}
+
+model Inquiry {
+  id          String   @id @default(uuid())
+  plotId      String   @map("plot_id")
+  plot        Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  inquiryType String   @map("inquiry_type") // whatsapp, phone, share
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([plotId])
+  @@index([createdAt])
+  @@map("inquiries")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plotId    String   @map("plot_id")
+  plot      Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, plotId])
+  @@map("favorites")
+}
+
+model AdminLog {
+  id         String   @id @default(uuid())
+  adminId    String?  @map("admin_id")
+  admin      User?    @relation(fields: [adminId], references: [id])
+  action     String
+  entityType String?  @map("entity_type") // plot, user, system
+  entityId   String?  @map("entity_id")
+  details    Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@map("admin_logs")
+}
